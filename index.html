@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>证词之间（Between Testimonies）</title>
+  <style>
+    :root { --bg:#0f1117; --panel:#171b24; --panel-soft:#1f2430; --text:#e6e7eb; --muted:#9ba3b4; --accent:#7ea8ff; --good:#72d6a5; --line:#2b3242; }
+    *{box-sizing:border-box} body{margin:0;font-family:"Segoe UI",system-ui,sans-serif;background:radial-gradient(1200px 700px at 10% -20%,#20263a 0%,var(--bg) 60%);color:var(--text);min-height:100vh}
+    h1,h2,h3,p{margin:0}.app{display:grid;grid-template-columns:1.25fr 1fr .95fr;gap:12px;padding:12px;min-height:100vh}
+    .col{background:linear-gradient(180deg,rgba(255,255,255,.01),rgba(255,255,255,0));border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;min-height:0}
+    .header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:10px}.subtitle,.small{font-size:.82rem;color:var(--muted)}
+    .testimonies{overflow:auto;display:grid;gap:10px}.witness{border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--panel)} .witness h3{font-size:.95rem;margin-bottom:7px}
+    .cards{display:grid;gap:6px}.card{background:var(--panel-soft);border:1px solid #313a4c;border-radius:8px;padding:8px;font-size:.87rem;line-height:1.35;cursor:pointer;transition:.15s;user-select:none}
+    .card:hover{transform:translateY(-1px);border-color:#4a5a7c}.card.selected{border-color:var(--accent);background:#24324f}.card.placed{border-color:var(--good)}
+    .center-stack,.right-stack{display:grid;gap:10px;min-height:0}.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px}
+    .relation-controls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+    button{background:#222a3a;border:1px solid #3c4660;color:var(--text);border-radius:8px;padding:8px;cursor:pointer} button:hover{background:#2a3550;border-color:#5a6f98}button:disabled{opacity:.45;cursor:not-allowed}
+    .timeline{min-height:120px;border:1px dashed #52607d;border-radius:8px;padding:8px;display:grid;gap:6px;align-content:start;background:rgba(126,168,255,.04)}
+    .timeline-item{font-size:.84rem;padding:6px;border-left:3px solid var(--accent);background:#1c2331;border-radius:4px;animation:rise .25s ease}@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    .mem-list{display:grid;gap:6px}.fragment{padding:8px;background:#1d2330;border:1px solid #364058;border-radius:7px;font-size:.84rem;opacity:.65}.fragment.unlocked{opacity:1;border-color:var(--good)}
+    .feedback{min-height:80px;font-size:.86rem;line-height:1.45;white-space:pre-wrap}.badge{font-size:.78rem;padding:3px 7px;border-radius:999px;border:1px solid #3e4d6d;color:var(--muted)}
+    .final-actions{display:grid;gap:6px;margin-top:8px}.ending{margin-top:8px;border-top:1px solid var(--line);padding-top:8px;font-size:.86rem;min-height:70px;animation:rise .3s ease}
+    @media (max-width:1080px){.app{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="col"><div class="header"><h2>证词区</h2><span class="subtitle">每次选择两条陈述</span></div><div id="testimonyList" class="testimonies"></div></section>
+    <section class="col center-stack">
+      <div class="panel"><div class="header"><h2>证据板</h2><span class="badge" id="progressBadge">0/6 处矛盾</span></div><p class="small">给两条陈述标记关系。</p><div class="relation-controls"><button id="btnContradiction">矛盾</button><button id="btnSupports">互相支持</button><button id="btnUncertain">不确定</button></div></div>
+      <div class="panel" style="flex:1;display:flex;flex-direction:column;min-height:220px;"><div class="header"><h2>时间线</h2><span class="small">拖拽已选陈述到此</span></div><div id="timeline" class="timeline"></div></div>
+    </section>
+    <section class="col right-stack">
+      <div class="panel"><div class="header"><h2>档案笔记</h2><span class="badge" id="fragBadge">0/5 片段</span></div><div id="feedback" class="feedback">楼梯间在每个人的记忆里都很安静——直到某一刻。</div></div>
+      <div class="panel" style="flex:1;overflow:auto;"><div class="header"><h2>记忆碎片</h2><span class="small">已恢复痕迹</span></div><div id="memoryList" class="mem-list"></div></div>
+      <div class="panel" id="reportPanel"><div class="header"><h2>最终报告</h2><span class="small">未解锁</span></div><button id="assembleBtn" disabled>组装报告</button><div id="finalActions" class="final-actions" style="display:none"></div><div id="endingText" class="ending"></div></div>
+    </section>
+  </div>
+<script>
+// ===== 数据 =====
+const testimonies=[
+{witness:"玛拉（美术社）",statements:["我在储物柜旁看手机，是16:07。","楼梯灯偏暖黄，不算亮。","我听到两下急促脚步，接着是金属碰响。","跌倒前，扶手边靠着一把蓝色雨伞。","乔纳先到平台，我在后面。","有人短促笑了一声，随后沉默。","我看见一只手从栏杆边缩回去。"]},
+{witness:"乔纳（辩论队）",statements:["训练拖堂，204教室时钟是16:14。","只有一盏楼梯灯亮着，颜色发灰。","没有金属声，只有闷响和喊叫。","栏杆边那把伞是红色，伞柄有裂口。","我到时玛拉已经在平台上。","有人是摔下后才开始跑动。","有人在跌倒前说了句：‘等一下，别。’"]},
+{witness:"伊玛尼老师",statements:["我大约16:10离开办公室。","走廊灯已切到晚间模式，冷白色。","我先听见柜门重响，然后是惊叫。","我到达平台时，没有看到雨伞。","我到时两名学生都已经在场。","我第一眼看见的是第三阶散落的纸。","争执声音很低，像在克制。"]},
+{witness:"利维（保洁员）",statements:["我在下层走廊拖地，手表是16:05。","两盏楼梯灯都亮着，但轻微闪烁。","在任何喊声前，我听到瓶子沿台阶滚动。","一把绿色雨伞挡住了最底一级边角。","我是最先到楼梯口并呼救的人。","有人抓住栏杆后，身体侧滑下去。","事后一个学生反复说：‘我没有推。’"]}
+];
+const contradictionRules=[
+{a:"16:07",b:"16:14",reason:"时间点冲突：精确时刻不能同时成立。"},
+{a:"暖黄",b:"冷白",reason:"照明色温记忆不一致。"},
+{a:"没有金属声",b:"金属碰响",reason:"首个声音来源存在冲突。"},
+{a:"蓝色雨伞",b:"红色",reason:"关键物体颜色冲突。"},
+{a:"已经在平台上",b:"先到平台",reason:"到达先后顺序互相颠倒。"},
+{a:"摔下后才开始跑动",b:"跌倒前",reason:"跌倒前后动作顺序冲突。"},
+{a:"没有看到雨伞",b:"绿色雨伞",reason:"雨伞存在与位置描述冲突。"}
+];
+const memoryFragments=["碎片01：争执核心是一本借走未还的速写本，不是成绩。","碎片02：有人在跌倒后把雨伞挪离扶手区域。","碎片03：‘我没有推’这句话，早于任何公开指控。","碎片04：楼梯监控已离线两周，无人报修。","碎片05：受伤者后退时视线在看另一个人。","碎片06：三个人都在自责，但理由不同。"];
+let selected=[],solved=new Set(),wrongAttempts=0,unlockedFragments=0,timelineItems=[];
+const $=id=>document.getElementById(id), testimonyList=$("testimonyList"),feedback=$("feedback"),progressBadge=$("progressBadge"),fragBadge=$("fragBadge"),memoryList=$("memoryList"),timeline=$("timeline"),assembleBtn=$("assembleBtn"),finalActions=$("finalActions"),endingText=$("endingText");
+
+// ===== 渲染 =====
+function renderTestimonies(){testimonyList.innerHTML='';testimonies.forEach((t,wi)=>{const w=document.createElement('article');w.className='witness';w.innerHTML=`<h3>${t.witness}</h3>`;const cards=document.createElement('div');cards.className='cards';t.statements.forEach((s,si)=>{const c=document.createElement('div');c.className='card';c.textContent=s;c.draggable=true;c.dataset.id=`${wi}-${si}`;c.addEventListener('click',()=>toggleSelect(c));c.addEventListener('dragstart',e=>{if(!selected.includes(c))toggleSelect(c);e.dataTransfer.setData('text/plain',c.dataset.id)});cards.appendChild(c)});w.appendChild(cards);testimonyList.appendChild(w)})}
+function renderFragments(){memoryList.innerHTML='';memoryFragments.forEach((txt,i)=>{const el=document.createElement('div');el.className='fragment'+(i<unlockedFragments?' unlocked':'');el.textContent=i<unlockedFragments?txt:`碎片${String(i+1).padStart(2,'0')}：[锁定]`;memoryList.appendChild(el)})}
+function renderTimeline(){timeline.innerHTML='';if(!timelineItems.length){timeline.innerHTML='<div class="small">把关键陈述拖到这里，尝试拼接事件顺序。</div>';return;}timelineItems.forEach(t=>{const item=document.createElement('div');item.className='timeline-item';item.textContent=t;timeline.appendChild(item)})}
+
+// ===== 交互 =====
+function toggleSelect(card){if(selected.includes(card)){selected=selected.filter(c=>c!==card);card.classList.remove('selected')}else{if(selected.length>=2){selected[0].classList.remove('selected');selected.shift()}selected.push(card);card.classList.add('selected')}}
+const includesPair=(r,a,b)=>(a.includes(r.a)&&b.includes(r.b))||(a.includes(r.b)&&b.includes(r.a));
+function hintIfNeeded(){if(wrongAttempts===3)feedback.textContent+="\n提示：先对比精确时间与灯光描述。";if(wrongAttempts===5)feedback.textContent+="\n提示：注意雨伞颜色、到达先后。";if(wrongAttempts>=7)feedback.textContent+="\n提示：关注‘跌倒前’与‘跌倒后’的动作顺序。"}
+function updateProgress(){progressBadge.textContent=`${solved.size}/6 处矛盾`;fragBadge.textContent=`${Math.min(unlockedFragments,memoryFragments.length)}/5 片段`;renderFragments();if(unlockedFragments>=5&&solved.size>=5&&timelineItems.length>=4){assembleBtn.disabled=false;document.querySelector('#reportPanel .small').textContent='可组装'}}
+function relate(type){if(selected.length!==2){feedback.textContent='请先精确选择两条陈述。';return;}const[a,b]=selected.map(c=>c.textContent);const hit=contradictionRules.find(r=>includesPair(r,a,b));if(type==='contradiction'){if(hit){const k=`${hit.a}|${hit.b}`;if(!solved.has(k)){solved.add(k);feedback.textContent=`已记录矛盾：${hit.reason}`;if(unlockedFragments<memoryFragments.length)unlockedFragments++;}else feedback.textContent='这组矛盾已记录。';}else{wrongAttempts++;feedback.textContent='这组更像差异，不足以构成关键矛盾。';hintIfNeeded();}} else if(type==='supports'){feedback.textContent='已记录互相支持。共识有价值，但裂缝更接近真相。';} else {wrongAttempts++;feedback.textContent='不确定也是真实体验，但无法解锁新碎片。';hintIfNeeded();} selected.forEach(c=>c.classList.remove('selected'));selected=[];updateProgress();}
+
+timeline.addEventListener('dragover',e=>e.preventDefault());timeline.addEventListener('drop',e=>{e.preventDefault();if(selected.length===0){feedback.textContent='先选中陈述，再拖拽到时间线。';return;}selected.forEach(c=>{const t=c.textContent;if(!timelineItems.includes(t)){timelineItems.push(t);c.classList.add('placed')}c.classList.remove('selected')});selected=[];feedback.textContent='时间线已更新。顺序也许比“谁有罪”更接近事实。';renderTimeline();updateProgress();});
+
+// ===== 结局 =====
+assembleBtn.addEventListener('click',()=>{finalActions.style.display='grid';finalActions.innerHTML='';const actions=[["提交完整真相","你保留所有不一致之处，报告更完整，但会伤及更多关系。"],["提交柔化版本","你淡化直接责任，保护了某些人，也稀释了问责。"],["删除报告","你选择沉默。机构获得平静，记忆继续在私下发酵。"],["私下发送报告","你把完整档案交给单一收件人，期待谨慎，也冒着被选择性使用的风险。"]];actions.forEach(([label,text])=>{const b=document.createElement('button');b.textContent=label;b.addEventListener('click',()=>endingText.textContent=text+" 结语：真相不是刀，而是重量；每个人都以不同方式背负它。");finalActions.appendChild(b)});feedback.textContent='档案整合完成。请选择一种可以被世界承受的真相形式。';});
+
+$("btnContradiction").addEventListener('click',()=>relate('contradiction'));$("btnSupports").addEventListener('click',()=>relate('supports'));$("btnUncertain").addEventListener('click',()=>relate('uncertain'));
+renderTestimonies();renderFragments();renderTimeline();updateProgress();
+</script>
+</body>
+</html>
