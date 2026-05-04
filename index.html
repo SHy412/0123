@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Between Testimonies</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --panel: #171b24;
+      --panel-soft: #1f2430;
+      --text: #e6e7eb;
+      --muted: #9ba3b4;
+      --accent: #7ea8ff;
+      --good: #72d6a5;
+      --warn: #f2be6f;
+      --bad: #df7d88;
+      --line: #2b3242;
+      --glow: 0 0 0 1px rgba(126, 168, 255, 0.2), 0 8px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(1200px 700px at 10% -20%, #20263a 0%, var(--bg) 60%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+
+    .app {
+      display: grid;
+      grid-template-columns: 1.25fr 1fr 0.95fr;
+      gap: 12px;
+      padding: 12px;
+      min-height: 100vh;
+    }
+
+    .col {
+      background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0));
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: var(--glow);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .subtitle { color: var(--muted); font-size: 0.85rem; }
+    .small { font-size: 0.8rem; color: var(--muted); }
+
+    .testimonies {
+      overflow: auto;
+      padding-right: 4px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .witness {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      background: var(--panel);
+    }
+
+    .witness h3 { font-size: 0.95rem; margin-bottom: 7px; }
+    .cards { display: grid; gap: 6px; }
+
+    .card {
+      background: var(--panel-soft);
+      border: 1px solid #313a4c;
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 0.87rem;
+      line-height: 1.35;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease, background 0.2s ease;
+      user-select: none;
+    }
+
+    .card:hover { transform: translateY(-1px); border-color: #4a5a7c; }
+    .card.selected { border-color: var(--accent); background: #24324f; }
+    .card.placed { border-color: var(--good); }
+
+    .center-stack, .right-stack { display: grid; gap: 10px; min-height: 0; }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    .relation-controls {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    button {
+      background: #222a3a;
+      border: 1px solid #3c4660;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 10px;
+      cursor: pointer;
+      transition: background .2s ease, border-color .2s ease;
+    }
+
+    button:hover { background: #2a3550; border-color: #5a6f98; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .timeline {
+      min-height: 120px;
+      border: 1px dashed #52607d;
+      border-radius: 8px;
+      padding: 8px;
+      display: grid;
+      gap: 6px;
+      align-content: start;
+      background: rgba(126, 168, 255, 0.04);
+    }
+
+    .timeline-item {
+      font-size: 0.84rem;
+      padding: 6px;
+      border-left: 3px solid var(--accent);
+      background: #1c2331;
+      border-radius: 4px;
+      animation: rise 0.25s ease;
+    }
+
+    @keyframes rise { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: translateY(0);} }
+
+    .mem-list { display: grid; gap: 6px; }
+    .fragment {
+      padding: 8px;
+      background: #1d2330;
+      border: 1px solid #364058;
+      border-radius: 7px;
+      font-size: 0.84rem;
+      opacity: 0.65;
+      transition: opacity .25s ease, border-color .25s ease;
+    }
+    .fragment.unlocked { opacity: 1; border-color: var(--good); }
+
+    .feedback {
+      min-height: 80px;
+      color: #d9deea;
+      font-size: 0.86rem;
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+
+    .badge { font-size: 0.78rem; padding: 3px 7px; border-radius: 999px; border: 1px solid #3e4d6d; color: var(--muted); }
+
+    .final-actions {
+      display: grid;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .ending {
+      margin-top: 8px;
+      border-top: 1px solid var(--line);
+      padding-top: 8px;
+      color: #cbd3e8;
+      font-size: 0.86rem;
+      min-height: 70px;
+      animation: rise .3s ease;
+    }
+
+    @media (max-width: 1080px) {
+      .app { grid-template-columns: 1fr; }
+      .col { max-height: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="col">
+      <div class="header">
+        <h2>Testimonies</h2>
+        <span class="subtitle">Select two statements</span>
+      </div>
+      <div id="testimonyList" class="testimonies"></div>
+    </section>
+
+    <section class="col center-stack">
+      <div class="panel">
+        <div class="header"><h2>Evidence Board</h2><span class="badge" id="progressBadge">0/6 contradictions</span></div>
+        <p class="small">Mark the relationship between two selected statements.</p>
+        <div class="relation-controls">
+          <button id="btnContradiction">Contradiction</button>
+          <button id="btnSupports">Supports</button>
+          <button id="btnUncertain">Uncertain</button>
+        </div>
+      </div>
+
+      <div class="panel" style="flex:1; display:flex; flex-direction:column; min-height:220px;">
+        <div class="header"><h2>Timeline</h2><span class="small">Drag selected statements here</span></div>
+        <div id="timeline" class="timeline" aria-label="Timeline drop area"></div>
+      </div>
+    </section>
+
+    <section class="col right-stack">
+      <div class="panel">
+        <div class="header"><h2>Notebook</h2><span class="badge" id="fragBadge">0/5 fragments</span></div>
+        <div id="feedback" class="feedback">The stairwell is quiet in every memory, until it isn't.</div>
+      </div>
+
+      <div class="panel" style="flex:1; overflow:auto;">
+        <div class="header"><h2>Memory Fragments</h2><span class="small">Recovered traces</span></div>
+        <div id="memoryList" class="mem-list"></div>
+      </div>
+
+      <div class="panel" id="reportPanel">
+        <div class="header"><h2>Final Report</h2><span class="small">Locked</span></div>
+        <button id="assembleBtn" disabled>Assemble Report</button>
+        <div id="finalActions" class="final-actions" style="display:none;"></div>
+        <div id="endingText" class="ending"></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // ---------------- Data ----------------
+    const testimonies = [
+      { witness: "Mara (Art Club)", statements: [
+        "I checked my phone near the lockers; it was 4:07.",
+        "The stairwell lights were warm yellow, not bright.",
+        "I heard two quick footsteps, then a metal clatter.",
+        "A blue umbrella was leaning on the rail before the fall.",
+        "Jonah reached the landing before me.",
+        "Someone laughed once, then went silent.",
+        "I saw a hand pull back from the railing."
+      ]},
+      { witness: "Jonah (Debate Team)", statements: [
+        "Practice ended late; the clock in Room 204 read 4:14.",
+        "Only one stair light worked, so everything looked gray.",
+        "There was no clatter, just a thud and shouting.",
+        "The umbrella by the rail was red with a cracked handle.",
+        "Mara was already on the landing when I arrived.",
+        "I heard running after the fall, not before.",
+        "Before anyone fell, someone said, 'wait, don't.'"
+      ]},
+      { witness: "Ms. Imani (Teacher)", statements: [
+        "I left the faculty room at approximately 4:10.",
+        "The corridor lights had switched to evening mode: cool white.",
+        "I heard a locker door slam, then a cry.",
+        "No umbrella was on the landing when I reached it.",
+        "I arrived after both students were already there.",
+        "The first thing I saw was papers scattered on step three.",
+        "The argument sounded hushed, almost controlled."
+      ]},
+      { witness: "Levi (Custodian)", statements: [
+        "I was mopping the lower hall; my watch said 4:05.",
+        "Both stair lights were fully on and flickering slightly.",
+        "I heard a bottle roll down the steps before any shout.",
+        "A green umbrella blocked part of the bottom step.",
+        "I got to the stairs first and called for help.",
+        "Someone grabbed the railing, then slipped sideways.",
+        "Afterward, one student kept saying, 'I didn't push.'"
+      ]}
+    ];
+
+    const contradictionRules = [
+      { a: "4:07", b: "4:14", reason: "Time window conflict: both cannot be the precise moment." },
+      { a: "warm yellow", b: "cool white", reason: "Lighting memory diverges between warm and cool tones." },
+      { a: "no clatter", b: "metal clatter", reason: "Sound memory conflict around the first noise." },
+      { a: "blue umbrella", b: "red", reason: "Object color mismatch suggests distortion or substitution." },
+      { a: "already on the landing", b: "reached the landing before me", reason: "Arrival order is reversed." },
+      { a: "running after the fall", b: "before the fall", reason: "Action sequence differs before impact." },
+      { a: "No umbrella was on the landing", b: "umbrella blocked", reason: "Presence and location of umbrella conflict." }
+    ];
+
+    const memoryFragments = [
+      "Fragment 01: The argument was about a borrowed sketchbook, not grades.",
+      "Fragment 02: Someone moved the umbrella away from the rail after the fall.",
+      "Fragment 03: The phrase 'I didn't push' came before any accusation.",
+      "Fragment 04: The stairwell camera had been offline for two weeks.",
+      "Fragment 05: The victim stepped backward while looking at another person.",
+      "Fragment 06: Three people felt responsible for different reasons."
+    ];
+
+    // ---------------- State ----------------
+    let selected = [];
+    let solved = new Set();
+    let wrongAttempts = 0;
+    let unlockedFragments = 0;
+    let timelineItems = [];
+
+    const testimonyList = document.getElementById('testimonyList');
+    const feedback = document.getElementById('feedback');
+    const progressBadge = document.getElementById('progressBadge');
+    const fragBadge = document.getElementById('fragBadge');
+    const memoryList = document.getElementById('memoryList');
+    const timeline = document.getElementById('timeline');
+    const assembleBtn = document.getElementById('assembleBtn');
+    const finalActions = document.getElementById('finalActions');
+    const endingText = document.getElementById('endingText');
+
+    // ---------------- Rendering ----------------
+    function renderTestimonies() {
+      testimonyList.innerHTML = '';
+      testimonies.forEach((t, wi) => {
+        const w = document.createElement('article');
+        w.className = 'witness';
+        w.innerHTML = `<h3>${t.witness}</h3>`;
+        const cards = document.createElement('div');
+        cards.className = 'cards';
+        t.statements.forEach((s, si) => {
+          const c = document.createElement('div');
+          c.className = 'card';
+          c.textContent = s;
+          c.draggable = true;
+          c.dataset.id = `${wi}-${si}`;
+          c.addEventListener('click', () => toggleSelect(c));
+          c.addEventListener('dragstart', (e) => {
+            if (!selected.includes(c)) toggleSelect(c);
+            e.dataTransfer.setData('text/plain', c.dataset.id);
+          });
+          cards.appendChild(c);
+        });
+        w.appendChild(cards);
+        testimonyList.appendChild(w);
+      });
+    }
+
+    function renderFragments() {
+      memoryList.innerHTML = '';
+      memoryFragments.forEach((txt, i) => {
+        const el = document.createElement('div');
+        el.className = 'fragment' + (i < unlockedFragments ? ' unlocked' : '');
+        el.textContent = i < unlockedFragments ? txt : `Fragment ${String(i + 1).padStart(2, '0')}: [locked]`;
+        memoryList.appendChild(el);
+      });
+    }
+
+    function renderTimeline() {
+      timeline.innerHTML = '';
+      if (!timelineItems.length) {
+        timeline.innerHTML = '<div class="small">Drop selected statements to build event order.</div>';
+        return;
+      }
+      timelineItems.forEach(t => {
+        const item = document.createElement('div');
+        item.className = 'timeline-item';
+        item.textContent = t;
+        timeline.appendChild(item);
+      });
+    }
+
+    // ---------------- Interaction ----------------
+    function toggleSelect(card) {
+      if (selected.includes(card)) {
+        selected = selected.filter(c => c !== card);
+        card.classList.remove('selected');
+      } else {
+        if (selected.length >= 2) {
+          selected[0].classList.remove('selected');
+          selected.shift();
+        }
+        selected.push(card);
+        card.classList.add('selected');
+      }
+    }
+
+    function includesPair(rule, a, b) {
+      return (a.includes(rule.a) && b.includes(rule.b)) || (a.includes(rule.b) && b.includes(rule.a));
+    }
+
+    function relate(type) {
+      if (selected.length !== 2) {
+        feedback.textContent = 'Select exactly two statements before marking a relation.';
+        return;
+      }
+      const [a, b] = selected.map(c => c.textContent);
+      const hit = contradictionRules.find(r => includesPair(r, a, b));
+
+      if (type === 'contradiction') {
+        if (hit) {
+          const key = `${hit.a}|${hit.b}`;
+          if (!solved.has(key)) {
+            solved.add(key);
+            feedback.textContent = `Contradiction logged: ${hit.reason}`;
+            if (unlockedFragments < memoryFragments.length) unlockedFragments++;
+          } else {
+            feedback.textContent = 'That contradiction is already recorded in your notebook.';
+          }
+        } else {
+          wrongAttempts++;
+          feedback.textContent = 'That pair does not strongly conflict. Memory can disagree without contradiction.';
+          hintIfNeeded();
+        }
+      } else if (type === 'supports') {
+        feedback.textContent = 'Support noted. Convergence helps, but tension reveals hidden memory.';
+      } else {
+        wrongAttempts++;
+        feedback.textContent = 'Uncertainty is valid. But unresolved uncertainty will not unlock fragments.';
+        hintIfNeeded();
+      }
+
+      selected.forEach(c => c.classList.remove('selected'));
+      selected = [];
+      updateProgress();
+    }
+
+    function hintIfNeeded() {
+      if (wrongAttempts === 3) feedback.textContent += '\nHint: compare exact times and lighting descriptions.';
+      if (wrongAttempts === 5) feedback.textContent += '\nHint: object color and who arrived first hide key distortions.';
+      if (wrongAttempts >= 7) feedback.textContent += '\nHint: listen for whether sound or running happened before or after the fall.';
+    }
+
+    function updateProgress() {
+      progressBadge.textContent = `${solved.size}/6 contradictions`;
+      fragBadge.textContent = `${Math.min(unlockedFragments, memoryFragments.length)}/5 fragments`;
+      renderFragments();
+
+      if (unlockedFragments >= 5 && solved.size >= 5 && timelineItems.length >= 4) {
+        assembleBtn.disabled = false;
+        document.querySelector('#reportPanel .small').textContent = 'Ready';
+      }
+    }
+
+    // ---------------- Timeline drag/drop ----------------
+    timeline.addEventListener('dragover', (e) => e.preventDefault());
+    timeline.addEventListener('drop', (e) => {
+      e.preventDefault();
+      if (selected.length === 0) {
+        feedback.textContent = 'Select at least one statement, then drag it into the timeline.';
+        return;
+      }
+      selected.forEach(c => {
+        const txt = c.textContent;
+        if (!timelineItems.includes(txt)) {
+          timelineItems.push(txt);
+          c.classList.add('placed');
+        }
+        c.classList.remove('selected');
+      });
+      selected = [];
+      feedback.textContent = 'Timeline updated. Ordering memory may reveal motive without naming a villain.';
+      renderTimeline();
+      updateProgress();
+    });
+
+    // ---------------- Final report / endings ----------------
+    assembleBtn.addEventListener('click', () => {
+      finalActions.style.display = 'grid';
+      finalActions.innerHTML = '';
+      const actions = [
+        ['Submit the full truth', 'You include every inconsistency, implicating fear, pride, and silence.'],
+        ['Submit a softened version', 'You reduce direct blame, preserving relationships but blurring accountability.'],
+        ['Delete the report', 'You choose mercy or avoidance; the institution keeps its comfortable story.'],
+        ['Send the report privately', 'You trust one person with the full archive, risking selective justice.']
+      ];
+
+      actions.forEach(([label, text]) => {
+        const btn = document.createElement('button');
+        btn.textContent = label;
+        btn.addEventListener('click', () => {
+          endingText.textContent = text + ' Final note: truth is not a blade; it is a weight carried differently by each witness.';
+        });
+        finalActions.appendChild(btn);
+      });
+
+      feedback.textContent = 'Archive synthesis complete. Choose what form of truth can live in the world.';
+    });
+
+    document.getElementById('btnContradiction').addEventListener('click', () => relate('contradiction'));
+    document.getElementById('btnSupports').addEventListener('click', () => relate('supports'));
+    document.getElementById('btnUncertain').addEventListener('click', () => relate('uncertain'));
+
+    renderTestimonies();
+    renderFragments();
+    renderTimeline();
+    updateProgress();
+  </script>
+</body>
+</html>
